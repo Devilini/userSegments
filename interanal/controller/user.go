@@ -3,11 +3,11 @@ package controller
 import (
 	"net/http"
 	"strconv"
+	"userSegments/interanal/service"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
-	"userSegments/interanal/domain/user/service"
 )
 
 type userController struct {
@@ -28,6 +28,11 @@ func (h *userController) GetUser(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	user, err := h.userService.GetUserById(r.Context(), id)
+	if user.Id == 0 {
+		errorResponseJson(w, err.Error())
+		return
+	}
+
 	if err != nil {
 		logrus.Print(err)
 		return
@@ -48,21 +53,11 @@ func (h *userController) CreateUser(w http.ResponseWriter, r *http.Request, _ ht
 	}
 
 	userName := r.PostFormValue("name")
-	logrus.Print(userName)
-	//logrus.Print(name)
-	//return
-	//if userName == "" {
-	//	logrus.Print("Empty user name")
-	//	return
-	//}
+
 	var request = userCreateRequest{
 		Name: userName,
 	}
 
-	//resp := make(map[string]string)
-	//resp["name"] = "text"
-	//_ = json.Unmarshal([]byte(resp), &u)
-	//logrus.Print(request)
 	validate := validator.New()
 	err = validate.Struct(request)
 	if err != nil {

@@ -6,14 +6,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"userSegments/interanal/domain/user/model"
+	"userSegments/interanal/model"
 )
 
 type User interface {
-	//CreateProduct(ctx context.Context, name string) (int, error)
-	GetById(ctx context.Context, id int) (model.User, error)
-	Create(ctx context.Context, name string) (int, error)
-	//GetAllProducts(ctx context.Context) ([]entity.Product, error)
+	GetUserById(ctx context.Context, id int) (model.User, error)
+	CreateUser(ctx context.Context, name string) (int, error)
 }
 
 type UserStorage struct {
@@ -75,17 +73,8 @@ func NewUserStorage(client PostgresClient) UserStorage {
 //	return user, nil
 //}
 
-func (s *UserStorage) GetById(ctx context.Context, id int) (model.User, error) {
+func (s *UserStorage) GetUserById(ctx context.Context, id int) (model.User, error) {
 	query := `SELECT id, name FROM users WHERE id=$1`
-	//
-	//rows, err := s.client.Query(ctx, query, id)
-	//if err != nil {
-	//	return nil, fmt.Errorf("unable to query users: %w", err)
-	//}
-	//defer rows.Close()
-
-	//return pgx.CollectRows(rows, pgx.RowToStructByName(model.User))
-
 	var user model.User
 	err := s.client.QueryRow(ctx, query, id).Scan(&user.Id, &user.Name)
 	if err != nil {
@@ -95,7 +84,7 @@ func (s *UserStorage) GetById(ctx context.Context, id int) (model.User, error) {
 	return user, nil
 }
 
-func (s *UserStorage) Create(ctx context.Context, name string) (int, error) {
+func (s *UserStorage) CreateUser(ctx context.Context, name string) (int, error) {
 	var id int
 	query := "INSERT INTO users (name) values ($1) RETURNING id" // todo table name
 	row := s.client.QueryRow(ctx, query, name)

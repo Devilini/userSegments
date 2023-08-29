@@ -11,19 +11,18 @@ import (
 	"time"
 	"userSegments/interanal/config"
 	"userSegments/interanal/controller"
-	"userSegments/interanal/domain/user/service"
-	"userSegments/interanal/domain/user/storage"
-	"userSegments/pkg/metric"
+	"userSegments/interanal/service"
+	"userSegments/interanal/storage"
 	psql "userSegments/pkg/postgresql"
 )
 
 type App struct {
-	cfg        *config.Config
-	router     *httprouter.Router
-	httpServer *http.Server
-	//logger     *Logger
-	logger      *logrus.Entry
-	userService service.User
+	cfg            *config.Config
+	router         *httprouter.Router
+	httpServer     *http.Server
+	logger         *logrus.Entry
+	userService    service.User
+	segmentService service.Segment
 }
 
 var e *logrus.Entry
@@ -40,31 +39,8 @@ func NewApp(cfg *config.Config) (App, error) {
 	router := httprouter.New()
 	logger := e
 
-	//router.GET("/", Index)
-	router.GET("/test", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		logrus.Print("test")
-		w.WriteHeader(204)
-		w.Write([]byte("test"))
-	})
-
-	//router.HandlerFunc(http.MethodGet, "/test", func(w http.ResponseWriter, r *http.Request) {
-	//	logrus.Print("test")
-	//	w.WriteHeader(204)
-	//	w.Write([]byte("test"))
-	//})
-	metricHandler := metric.Handler{}
-	metricHandler.Register(router)
-
-	//log.Fatal(http.ListenAndServe(":3333", router))
-
-	//pgDsn := fmt.Sprintf(
-	//	"postgres://%s:%s@%s:%s/%s",
-	//	cfg.PostgreSQL.Username,
-	//	cfg.PostgreSQL.Password,
-	//	cfg.PostgreSQL.Host,
-	//	cfg.PostgreSQL.Port,
-	//	cfg.PostgreSQL.Database,
-	//)
+	//metricHandler := metric.Handler{}
+	//metricHandler.Register(router)
 	pgConfig := psql.NewPgConfig(
 		cfg.PostgreSQL.Username,
 		cfg.PostgreSQL.Password,
@@ -77,35 +53,31 @@ func NewApp(cfg *config.Config) (App, error) {
 	// TODO to config
 	pgClient, err := psql.NewClient(context.Background(), 5, 3*time.Second, pgConfig)
 	if err != nil {
-		//return App{}, errors.Wrap(err, "psql.NewClient")
+		return App{}, errors.New("psql.NewClient")
 	}
 
-	//closer.AddN(pgClient)
-
+	// TODO вынести роуты
 	userStorage := storage.NewUserStorage(pgClient)
-	//user, err := userStorage.GetById(context.Background(), 1) // todo 1
-	//if err != nil {
-	//	logrus.Fatal(err)
-	//}
-	//logrus.Fatal(user)
-	//productStorage := storage.NewUserStorage(pgClient)
+	segmentStorage := storage.NewSegmentStorage(pgClient)
 	userService := service.NewUserService(&userStorage)
-	//user, _ := userService.GetUserById(context.Background(), 1)
-	//if err != nil {
-	//	logrus.Fatal(err)
-	//}
-	//logrus.Fatal(user)
+	segmentService := service.NewSegmentService(&segmentStorage)
 	userController := controller.NewUserController(userService)
+	segmentController := controller.NewSegmentController(segmentService)
 
 	//router.HandlerFunc(http.MethodGet, "/api/user/:id", userController.GetUser)
 	router.GET("/api/users/:id", userController.GetUser)
 	router.POST("/api/users", userController.CreateUser)
 
+	router.GET("/api/segments/:id", segmentController.GetSegment) //todo :slug ????
+	router.POST("/api/segments", segmentController.CreateSegment)
+	router.DELETE("/api/segments/:slug", segmentController.DeleteSegment)
+
 	return App{
-		cfg:         cfg,
-		router:      router,
-		logger:      logger,
-		userService: userService,
+		cfg:            cfg,
+		router:         router,
+		logger:         logger,
+		userService:    userService,
+		segmentService: segmentService,
 	}, nil
 }
 

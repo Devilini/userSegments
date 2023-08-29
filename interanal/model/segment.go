@@ -1,4 +1,4 @@
-package segment
+package model
 
 type Segment struct {
 	Id   int    `json:"id"`

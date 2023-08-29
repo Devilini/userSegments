@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
-	"userSegments/interanal/domain/user/storage"
-
-	"userSegments/interanal/domain/user/model"
+	"fmt"
+	"userSegments/interanal/model"
+	"userSegments/interanal/storage"
 )
 
 //type repository interface {
@@ -36,15 +36,16 @@ func NewUserService(storage storage.User) *UserService {
 //}
 
 func (s *UserService) GetUserById(ctx context.Context, id int) (model.User, error) {
-	return s.userStorage.GetById(ctx, id)
-	//return model.User{
-	//	1,
-	//	"req.Name",
-	//}, nil
+	user, err := s.userStorage.GetUserById(ctx, id)
+	if user.Id == 0 {
+		return user, fmt.Errorf("user does not exists") // todo error
+	}
+
+	return user, err
 }
 
 func (s *UserService) CreateUser(ctx context.Context, name string) (int, error) {
-	return s.userStorage.Create(ctx, name)
+	return s.userStorage.CreateUser(ctx, name)
 }
 
 //func (s *UserService) CreateProduct(ctx context.Context, req model.CreateProduct) (model.User, error) {
