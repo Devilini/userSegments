@@ -1,11 +1,11 @@
 package controller
 
 import (
-	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 
+	"github.com/go-playground/validator/v10"
+	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 	"userSegments/interanal/domain/user/service"
 )
@@ -15,65 +15,72 @@ type userController struct {
 }
 
 func NewUserController(productService service.User) *userController {
-	r := &userController{
+	return &userController{
 		userService: productService,
 	}
-
-	//g.POST("/create", r.create)
-	//g.GET("/", r.getById)
-
-	return r
 }
 
-func (h *userController) GetUser(w http.ResponseWriter, r *http.Request) {
-	has := r.URL.Query().Has("id")
-	logrus.Print(has)
-	if !has {
-		errorResponseJson(w, "Err, need user id")
+func (h *userController) GetUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id, err := strconv.Atoi(ps.ByName("id"))
+	if err != nil {
+		errorResponseJson(w, "Invalid format of user id")
 		return
 	}
-	id := r.URL.Query().Get("id")
-	// string to int
-	idInt, err := strconv.Atoi(id)
+
+	user, err := h.userService.GetUserById(r.Context(), id)
 	if err != nil {
-		panic(err)
-	}
-	user, err := h.userService.GetUserById(r.Context(), idInt)
-	if err != nil {
-		logrus.Print("err")
 		logrus.Print(err)
-		//return err
+		return
 	}
-	logrus.Print(user)
 
 	responseJson(w, user)
 }
 
-func responseJson(w http.ResponseWriter, data any) {
-	jsonResp, err := json.Marshal(data)
-	if err != nil {
-		// handle error
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResp)
+type userCreateRequest struct {
+	Name string `json:"name" validate:"required"`
 }
 
-func errorResponseJson(w http.ResponseWriter, text string) {
-	resp := make(map[string]string)
-	resp["error"] = text
-	jsonResp, err := json.Marshal(resp)
+func (h *userController) CreateUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	err := r.ParseForm()
 	if err != nil {
-		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+		logrus.Print(err)
+		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write(jsonResp)
 
-	//err := errors.New(text)
-	//w.Header().Set("Content-Type", "application/json")
-	//w.WriteHeader(http.StatusBadRequest)
-	//
-	//w.Write([]byte(err.Error()))
+	userName := r.PostFormValue("name")
+	logrus.Print(userName)
+	//logrus.Print(name)
+	//return
+	//if userName == "" {
+	//	logrus.Print("Empty user name")
+	//	return
+	//}
+	var request = userCreateRequest{
+		Name: userName,
+	}
+
+	//resp := make(map[string]string)
+	//resp["name"] = "text"
+	//_ = json.Unmarshal([]byte(resp), &u)
+	//logrus.Print(request)
+	validate := validator.New()
+	err = validate.Struct(request)
+	if err != nil {
+		errorResponseJson(w, err.Error())
+		return
+	}
+
+	id, err := h.userService.CreateUser(r.Context(), request.Name)
+	if err != nil {
+		logrus.Print(err)
+		return
+	}
+
+	type response struct {
+		Id int `json:"id"`
+	}
+
+	responseJson(w, response{
+		Id: id,
+	})
 }

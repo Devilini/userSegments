@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 	"net"
@@ -21,7 +22,8 @@ type App struct {
 	router     *httprouter.Router
 	httpServer *http.Server
 	//logger     *Logger
-	logger *logrus.Entry
+	logger      *logrus.Entry
+	userService service.User
 }
 
 var e *logrus.Entry
@@ -95,13 +97,15 @@ func NewApp(cfg *config.Config) (App, error) {
 	//logrus.Fatal(user)
 	userController := controller.NewUserController(userService)
 
-	router.HandlerFunc(http.MethodGet, "/api/user", userController.GetUser)
+	//router.HandlerFunc(http.MethodGet, "/api/user/:id", userController.GetUser)
+	router.GET("/api/users/:id", userController.GetUser)
+	router.POST("/api/users", userController.CreateUser)
 
 	return App{
-		cfg:    cfg,
-		router: router,
-		logger: logger,
-		//productServiceServer: userStorage,
+		cfg:         cfg,
+		router:      router,
+		logger:      logger,
+		userService: userService,
 	}, nil
 }
 
@@ -110,14 +114,9 @@ func (a *App) Run() {
 }
 
 func (a *App) startHTTP() {
-	//logger := logging.WithFields(ctx,
-	//	logging.StringField("IP", a.cfg.HTTP.IP),
-	//	logging.IntField("Port", a.cfg.HTTP.Port),
-	//)
 	logrus.Info("HTTP Server initializing")
 
-	//listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", "", 3333)) // todo
-	listener, err := net.Listen("tcp", ":8000") // todo cfg.PostgreSQL.Port,
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", "", a.cfg.Listen.Port))
 	//listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", a.cfg.Listen.Ip, a.cfg.Listen.Port))
 	if err != nil {
 		a.logger.Fatal("failed to create listener")

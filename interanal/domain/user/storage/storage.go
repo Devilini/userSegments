@@ -12,6 +12,7 @@ import (
 type User interface {
 	//CreateProduct(ctx context.Context, name string) (int, error)
 	GetById(ctx context.Context, id int) (model.User, error)
+	Create(ctx context.Context, name string) (int, error)
 	//GetAllProducts(ctx context.Context) ([]entity.Product, error)
 }
 
@@ -92,4 +93,15 @@ func (s *UserStorage) GetById(ctx context.Context, id int) (model.User, error) {
 	}
 
 	return user, nil
+}
+
+func (s *UserStorage) Create(ctx context.Context, name string) (int, error) {
+	var id int
+	query := "INSERT INTO users (name) values ($1) RETURNING id" // todo table name
+	row := s.client.QueryRow(ctx, query, name)
+	if err := row.Scan(&id); err != nil {
+		return 0, err
+	}
+
+	return id, nil
 }

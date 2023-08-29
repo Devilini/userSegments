@@ -13,8 +13,8 @@ import (
 //}
 
 type User interface {
-	//CreateProduct(ctx context.Context, name string) (int, error)
 	GetUserById(ctx context.Context, id int) (model.User, error)
+	CreateUser(ctx context.Context, name string) (int, error)
 }
 
 type UserService struct {
@@ -41,6 +41,10 @@ func (s *UserService) GetUserById(ctx context.Context, id int) (model.User, erro
 	//	1,
 	//	"req.Name",
 	//}, nil
+}
+
+func (s *UserService) CreateUser(ctx context.Context, name string) (int, error) {
+	return s.userStorage.Create(ctx, name)
 }
 
 //func (s *UserService) CreateProduct(ctx context.Context, req model.CreateProduct) (model.User, error) {
