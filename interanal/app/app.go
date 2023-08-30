@@ -17,12 +17,13 @@ import (
 )
 
 type App struct {
-	cfg            *config.Config
-	router         *httprouter.Router
-	httpServer     *http.Server
-	logger         *logrus.Entry
-	userService    service.User
-	segmentService service.Segment
+	cfg                 *config.Config
+	router              *httprouter.Router
+	httpServer          *http.Server
+	logger              *logrus.Entry
+	userService         service.User
+	segmentService      service.Segment
+	userSegmentsService service.UserSegments
 }
 
 var e *logrus.Entry
@@ -59,10 +60,13 @@ func NewApp(cfg *config.Config) (App, error) {
 	// TODO вынести роуты
 	userStorage := storage.NewUserStorage(pgClient)
 	segmentStorage := storage.NewSegmentStorage(pgClient)
+	userSegmentsStorage := storage.NewUserSegmentsStorage(pgClient)
 	userService := service.NewUserService(&userStorage)
 	segmentService := service.NewSegmentService(&segmentStorage)
+	userSegmentsService := service.NewUserSegmentsService(&userSegmentsStorage)
 	userController := controller.NewUserController(userService)
 	segmentController := controller.NewSegmentController(segmentService)
+	usersSegmentController := controller.NewUserSegmentsController(userSegmentsService)
 
 	//router.HandlerFunc(http.MethodGet, "/api/user/:id", userController.GetUser)
 	router.GET("/api/users/:id", userController.GetUser)
@@ -72,12 +76,15 @@ func NewApp(cfg *config.Config) (App, error) {
 	router.POST("/api/segments", segmentController.CreateSegment)
 	router.DELETE("/api/segments/:slug", segmentController.DeleteSegment)
 
+	router.GET("/api/users/:id/segments", usersSegmentController.GetUserSegments)
+
 	return App{
-		cfg:            cfg,
-		router:         router,
-		logger:         logger,
-		userService:    userService,
-		segmentService: segmentService,
+		cfg:                 cfg,
+		router:              router,
+		logger:              logger,
+		userService:         userService,
+		segmentService:      segmentService,
+		userSegmentsService: userSegmentsService,
 	}, nil
 }
 

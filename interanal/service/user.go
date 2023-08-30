@@ -47,20 +47,3 @@ func (s *UserService) GetUserById(ctx context.Context, id int) (model.User, erro
 func (s *UserService) CreateUser(ctx context.Context, name string) (int, error) {
 	return s.userStorage.CreateUser(ctx, name)
 }
-
-//func (s *UserService) CreateProduct(ctx context.Context, req model.CreateProduct) (model.User, error) {
-//	// cache
-//
-//	err := s.repository.Create(ctx, req)
-//	if err != nil {
-//		return model.User{}, err
-//	}
-//
-//	return model.NewProduct(
-//		req.ID,
-//		req.Name,
-//		req.Description,
-//		req.ImageID,
-//		nil,
-//	), nil
-//}

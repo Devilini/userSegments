@@ -18,7 +18,7 @@ type UserStorage struct {
 	client PostgresClient
 }
 
-type PostgresClient interface {
+type PostgresClient interface { //todo
 	Close()
 	Acquire(ctx context.Context) (*pgxpool.Conn, error)
 	AcquireFunc(ctx context.Context, f func(*pgxpool.Conn) error) error
