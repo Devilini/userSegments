@@ -61,11 +61,20 @@ func (s *UserSegmentsService) AddUserToSegment(ctx context.Context, req request.
 		}
 	}
 
-	var segmentsToDel []string
+	var segmentIds []int
 	if len(segmentSlugs) > 0 && len(req.DeleteSegments) > 0 {
-		segmentsToDel = helper.IntersectionSlices(req.DeleteSegments, segmentSlugs)
+		segmentsToDel := helper.IntersectionSlices(req.DeleteSegments, segmentSlugs)
 		log.Print("toDel", segmentsToDel)
+		existingsSegmentsForDel, err := s.userSegmentsStorage.GetSegmentsBySlugs(ctx, segmentsToDel, req.UserId)
+		if err != nil {
+			return 0, err
+		}
+
+		for _, segment := range existingsSegmentsForDel {
+			segmentIds = append(segmentIds, segment.Id)
+		}
+		log.Print("toDel", segmentIds)
 	}
 
-	return s.userSegmentsStorage.AddUserToSegment(ctx, userSegmentsToInsert, segmentsToDel, req.UserId)
+	return s.userSegmentsStorage.AddUserToSegment(ctx, userSegmentsToInsert, segmentIds, req.UserId)
 }

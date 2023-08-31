@@ -22,3 +22,12 @@ CREATE TABLE IF NOT EXISTS user_segments
     PRIMARY KEY(user_id, segment_id)
 );
 
+CREATE TABLE IF NOT EXISTS segments_history
+(
+    id   serial PRIMARY KEY,
+    user_id int,
+    segment_id int,
+    operation varchar(20),
+    created_at timestamp WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+);
+

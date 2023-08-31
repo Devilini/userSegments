@@ -27,7 +27,6 @@ func NewPgConfig(username string, password string, host string, port string, dat
 	}
 }
 
-// NewClient creates new postgres client.
 func NewClient(
 	ctx context.Context,
 	maxAttempts int,

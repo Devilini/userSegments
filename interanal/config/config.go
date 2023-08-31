@@ -15,11 +15,7 @@ type Config struct { //todo
 		Port string `env:"PORT" env-default:"8000"`
 	}
 	AppConfig struct {
-		LogLevel  string `env:"LOG_LEVEL" env-default:"trace"`
-		AdminUser struct {
-			Email    string `env:"ADMIN_EMAIL" env-default:"admin"`
-			Password string `env:"ADMIN_PWD" env-default:"admin"`
-		}
+		LogLevel string `env:"LOG_LEVEL" env-default:"trace"`
 	}
 	PostgreSQL struct {
 		Username string `env:"DB_USER" env-required:"true"`
@@ -30,29 +26,12 @@ type Config struct { //todo
 	}
 }
 
-//const (
-//	EnvConfigPathName  = "CONFIG-PATH"
-//	FlagConfigPathName = "config"
-//)
-
-// var configPath string
 var instance *Config
 var once sync.Once
 
 func GetConfig() *Config {
 	once.Do(func() {
-		//flag.StringVar(&configPath, "config", ".env", "this is app config file")
-		//flag.Parse()
-
 		log.Print("config init")
-
-		//if configPath == "" {
-		//	configPath = os.Getenv(EnvConfigPathName)
-		//}
-		//
-		//if configPath == "" {
-		//	log.Fatal("config path is required")
-		//}
 
 		instance = &Config{}
 

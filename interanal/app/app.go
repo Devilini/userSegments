@@ -40,8 +40,6 @@ func NewApp(cfg *config.Config) (App, error) {
 	router := httprouter.New()
 	logger := e
 
-	//metricHandler := metric.Handler{}
-	//metricHandler.Register(router)
 	pgConfig := psql.NewPgConfig(
 		cfg.PostgreSQL.Username,
 		cfg.PostgreSQL.Password,
@@ -49,7 +47,6 @@ func NewApp(cfg *config.Config) (App, error) {
 		cfg.PostgreSQL.Port,
 		cfg.PostgreSQL.Database,
 	)
-	//pgConfig.ConnStringFromCfg()
 
 	// TODO to config
 	pgClient, err := psql.NewClient(context.Background(), 5, 3*time.Second, pgConfig)
@@ -61,12 +58,17 @@ func NewApp(cfg *config.Config) (App, error) {
 	userStorage := storage.NewUserStorage(pgClient)
 	segmentStorage := storage.NewSegmentStorage(pgClient)
 	userSegmentsStorage := storage.NewUserSegmentsStorage(pgClient)
+	segmentHistoryStorage := storage.NewSegmentHistoryStorage(pgClient)
+
 	userService := service.NewUserService(&userStorage)
 	segmentService := service.NewSegmentService(&segmentStorage, &userSegmentsStorage)
 	userSegmentsService := service.NewUserSegmentsService(&userSegmentsStorage, segmentStorage)
+	segmentHistoryService := service.NewSegmentsHistoryService(&segmentHistoryStorage)
+
 	userController := controller.NewUserController(userService)
 	segmentController := controller.NewSegmentController(segmentService)
 	usersSegmentController := controller.NewUserSegmentsController(userSegmentsService)
+	segmentHistoryController := controller.NewSegmentHistoryControllerController(segmentHistoryService)
 
 	router.GET("/api/users/:id", userController.GetUser)
 	router.POST("/api/users", userController.CreateUser)
@@ -77,6 +79,9 @@ func NewApp(cfg *config.Config) (App, error) {
 
 	router.GET("/api/users/:id/segments", usersSegmentController.GetUserSegments)
 	router.POST("/api/users/:id/segments", usersSegmentController.AddUserToSegment)
+
+	router.POST("/api/segment-history", segmentHistoryController.GenerateHistoryReport)
+	router.GET("/reports/:filename", segmentHistoryController.DownloadReport)
 
 	return App{
 		cfg:                 cfg,
