@@ -12,6 +12,7 @@ import (
 type UserSegments interface {
 	GetUserSegments(ctx context.Context, id int) ([]model.Segment, error)
 	AddUserToSegment(ctx context.Context, userSegments []model.UserSegments, segmentsToDel []string, userId int) (int, error)
+	DeleteSlugForUsers(ctx context.Context, segmentId int) error
 }
 
 type UserSegmentsStorage struct {
@@ -146,4 +147,14 @@ func (s *UserSegmentsStorage) GetUserSegments(ctx context.Context, userId int) (
 	}
 
 	return segments, nil
+}
+
+func (s *UserSegmentsStorage) DeleteSlugForUsers(ctx context.Context, segmentId int) error {
+	query := "DELETE from user_segments WHERE segment_id=$1 RETURNING segment_id"
+	_, err := s.client.Exec(ctx, query, segmentId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

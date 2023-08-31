@@ -62,7 +62,7 @@ func NewApp(cfg *config.Config) (App, error) {
 	segmentStorage := storage.NewSegmentStorage(pgClient)
 	userSegmentsStorage := storage.NewUserSegmentsStorage(pgClient)
 	userService := service.NewUserService(&userStorage)
-	segmentService := service.NewSegmentService(&segmentStorage)
+	segmentService := service.NewSegmentService(&segmentStorage, &userSegmentsStorage)
 	userSegmentsService := service.NewUserSegmentsService(&userSegmentsStorage, segmentStorage)
 	userController := controller.NewUserController(userService)
 	segmentController := controller.NewSegmentController(segmentService)

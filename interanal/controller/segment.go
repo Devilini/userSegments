@@ -89,15 +89,18 @@ func (h *segmentController) CreateSegment(w http.ResponseWriter, r *http.Request
 
 func (h *segmentController) DeleteSegment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	slug := ps.ByName("slug")
-	id, err := h.segmentService.DeleteSegmentBySlug(r.Context(), slug)
-	if id == 0 {
+	err := h.segmentService.DeleteSegmentBySlug(r.Context(), slug)
+	if err != nil {
+		logrus.Print(err)
 		errorResponseJson(w, err.Error())
 		return
 	}
-	if err != nil {
-		logrus.Print(err)
-		return
+
+	type response struct {
+		Status string `json:"status"`
 	}
 
-	responseJson(w, id)
+	responseJson(w, response{
+		Status: "Success",
+	})
 }

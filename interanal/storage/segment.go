@@ -59,7 +59,7 @@ func (s *SegmentStorage) CreateSegment(ctx context.Context, slug string) (int, e
 
 func (s *SegmentStorage) DeleteSegmentBySlug(ctx context.Context, slug string) (int, error) {
 	var id int
-	query := "DELETE from segments WHERE slug=$1 RETURNING id" // todo table name
+	query := "DELETE from segments WHERE slug=$1 RETURNING id"
 	row := s.client.QueryRow(ctx, query, slug)
 	if err := row.Scan(&id); err != nil {
 		return 0, err
