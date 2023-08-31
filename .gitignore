@@ -1,5 +1,2 @@
-[url "git@github.com:"]
-    insteadOf = https://github.com/
 .idea
 .env
-/vendor/*
