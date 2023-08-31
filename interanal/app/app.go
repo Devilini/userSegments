@@ -63,12 +63,11 @@ func NewApp(cfg *config.Config) (App, error) {
 	userSegmentsStorage := storage.NewUserSegmentsStorage(pgClient)
 	userService := service.NewUserService(&userStorage)
 	segmentService := service.NewSegmentService(&segmentStorage)
-	userSegmentsService := service.NewUserSegmentsService(&userSegmentsStorage)
+	userSegmentsService := service.NewUserSegmentsService(&userSegmentsStorage, segmentStorage)
 	userController := controller.NewUserController(userService)
 	segmentController := controller.NewSegmentController(segmentService)
 	usersSegmentController := controller.NewUserSegmentsController(userSegmentsService)
 
-	//router.HandlerFunc(http.MethodGet, "/api/user/:id", userController.GetUser)
 	router.GET("/api/users/:id", userController.GetUser)
 	router.POST("/api/users", userController.CreateUser)
 
@@ -77,6 +76,7 @@ func NewApp(cfg *config.Config) (App, error) {
 	router.DELETE("/api/segments/:slug", segmentController.DeleteSegment)
 
 	router.GET("/api/users/:id/segments", usersSegmentController.GetUserSegments)
+	router.POST("/api/users/:id/segments", usersSegmentController.AddUserToSegment)
 
 	return App{
 		cfg:                 cfg,
@@ -95,8 +95,7 @@ func (a *App) Run() {
 func (a *App) startHTTP() {
 	logrus.Info("HTTP Server initializing")
 
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", "", a.cfg.Listen.Port))
-	//listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", a.cfg.Listen.Ip, a.cfg.Listen.Port))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", a.cfg.Listen.Ip, a.cfg.Listen.Port))
 	if err != nil {
 		a.logger.Fatal("failed to create listener")
 	}
@@ -122,6 +121,4 @@ func (a *App) startHTTP() {
 	if err != nil {
 		a.logger.Fatal("failed to shutdown server")
 	}
-
-	//return err
 }

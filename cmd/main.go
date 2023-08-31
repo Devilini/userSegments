@@ -27,3 +27,39 @@ func main() {
 	//	return
 	//}
 }
+
+//package main
+//
+//import (
+//	"encoding/json"
+//	"log"
+//	"net/http"
+//)
+//
+//type test_struct struct {
+//	Add string
+//}
+//
+//func process(w http.ResponseWriter, r *http.Request) {
+//	decoder := json.NewDecoder(r.Body)
+//	var t test_struct
+//	err := decoder.Decode(&t)
+//	if err != nil {
+//		log.Println(err)
+//	}
+//	log.Println(t.Add)
+//
+//	//buf, err := io.ReadAll(r.Body)
+//	//if err != nil {
+//	//	panic(err)
+//	//}
+//	//fmt.Printf("Body: %s\n", buf)
+//}
+//
+//func main() {
+//	server := http.Server{
+//		Addr: ":8000",
+//	}
+//	http.HandleFunc("/api/users/5/segments", process)
+//	server.ListenAndServe()
+//}

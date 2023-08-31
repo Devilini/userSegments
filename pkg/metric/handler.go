@@ -9,7 +9,7 @@ import (
 type Handler struct {
 }
 
-func (h *Handler) Register(router *httprouter.Router) {
+func (h *Handler) Register(router *httprouter.Router) { //todo удалить
 	router.HandlerFunc(http.MethodGet, "/api/heartbeat", h.Heartbeat)
 }
 

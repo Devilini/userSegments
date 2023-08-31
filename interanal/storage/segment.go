@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"userSegments/interanal/model"
 )
 
@@ -14,10 +15,10 @@ type Segment interface {
 }
 
 type SegmentStorage struct {
-	client PostgresClient
+	client *pgxpool.Pool
 }
 
-func NewSegmentStorage(client PostgresClient) SegmentStorage {
+func NewSegmentStorage(client *pgxpool.Pool) SegmentStorage {
 	return SegmentStorage{client: client}
 }
 

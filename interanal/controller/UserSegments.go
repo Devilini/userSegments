@@ -1,12 +1,16 @@
 package controller
 
 import (
+	"encoding/json"
+	"github.com/go-playground/validator/v10"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
+	"userSegments/interanal/controller/request"
 	"userSegments/interanal/model"
 	"userSegments/interanal/service"
+	"userSegments/pkg/helper"
 )
 
 type userSegmentsController struct {
@@ -42,41 +46,55 @@ func (h *userSegmentsController) GetUserSegments(w http.ResponseWriter, r *http.
 	})
 }
 
-//type userCreateRequest struct {
-//	Name string `json:"name" validate:"required"`
-//}
-//
-//func (h *userController) CreateUser2(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-//	err := r.ParseForm()
-//	if err != nil {
-//		logrus.Print(err)
-//		return
-//	}
-//
-//	userName := r.PostFormValue("name")
-//
-//	var request = userCreateRequest{
-//		Name: userName,
-//	}
-//
-//	validate := validator.New()
-//	err = validate.Struct(request)
-//	if err != nil {
-//		errorResponseJson(w, err.Error())
-//		return
-//	}
-//
-//	id, err := h.userService.CreateUser(r.Context(), request.Name)
-//	if err != nil {
-//		logrus.Print(err)
-//		return
-//	}
-//
-//	type response struct {
-//		Id int `json:"id"`
-//	}
-//
-//	responseJson(w, response{
-//		Id: id,
-//	})
-//}
+func (h *userSegmentsController) AddUserToSegment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id, err := strconv.Atoi(ps.ByName("id"))
+	if err != nil {
+		errorResponseJson(w, "Invalid format of user id")
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	var req request.UserAddSegmentRequest
+	if err := decoder.Decode(&req); err != nil {
+		logrus.Print(err)
+		return
+	}
+	req.UserId = id
+	logrus.Print(req)
+
+	validate := validator.New()
+	err = validate.Struct(req)
+	if err != nil {
+		errorResponseJson(w, err.Error())
+		return
+	}
+
+	if len(req.AddSegments) == 0 && len(req.DeleteSegments) == 0 {
+		errorResponseJson(w, "All segment structs are empty")
+		return
+	}
+
+	if len(helper.IntersectionSlices(req.AddSegments, req.DeleteSegments)) > 0 {
+		errorResponseJson(w, "Segment structs has duplicates")
+		return
+	}
+
+	result, err := h.userSegmentsService.AddUserToSegment(r.Context(), req)
+	if err != nil {
+		logrus.Print(err)
+		return
+	}
+
+	type response struct {
+		Status string `json:"status"`
+	}
+
+	status := "Failed"
+	if result > 0 {
+		status = "Success"
+	}
+
+	responseJson(w, response{
+		Status: status,
+	})
+}
