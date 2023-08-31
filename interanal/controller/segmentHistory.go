@@ -39,7 +39,8 @@ func (h *segmentHistoryController) DownloadReport(w http.ResponseWriter, r *http
 
 func (h *segmentHistoryController) GenerateHistoryReport(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var req struct {
-		Date string `json:"date" validate:"required"`
+		DateFrom string `json:"dateFrom" validate:"required"`
+		DateTo   string `json:"dateTo" validate:"required"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -48,7 +49,7 @@ func (h *segmentHistoryController) GenerateHistoryReport(w http.ResponseWriter, 
 		errorResponseJson(w, "Error parse params")
 		return
 	}
-	fileName, err := h.segmentHistoryService.GetSegmentsReport(r.Context(), req.Date)
+	fileName, err := h.segmentHistoryService.GetSegmentsReport(r.Context(), req.DateFrom, req.DateTo)
 	if err != nil {
 		logrus.Error(err)
 		errorResponseJson(w, "Report generating error")

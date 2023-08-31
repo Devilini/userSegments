@@ -10,7 +10,7 @@ import (
 )
 
 type SegmentHistory interface {
-	GetSegmentsReport(ctx context.Context, date string) (string, error)
+	GetSegmentsReport(ctx context.Context, dateFrom string, dateTo string) (string, error)
 }
 
 type SegmentHistoryService struct {
@@ -21,8 +21,8 @@ func NewSegmentsHistoryService(segmentHistoryStorage storage.SegmentHistory) *Se
 	return &SegmentHistoryService{segmentHistoryStorage: segmentHistoryStorage}
 }
 
-func (s *SegmentHistoryService) GetSegmentsReport(ctx context.Context, date string) (string, error) {
-	history, err := s.segmentHistoryStorage.GetSegmentsHistory(ctx, date)
+func (s *SegmentHistoryService) GetSegmentsReport(ctx context.Context, dateFrom string, dateTo string) (string, error) {
+	history, err := s.segmentHistoryStorage.GetSegmentsHistory(ctx, dateFrom, dateTo)
 	if err != nil {
 		return "", err
 	}

@@ -1,0 +1,57 @@
+### Get users by id
+GET http://localhost:8000/api/users/1
+Accept: application/json
+
+### Get segment by id
+GET http://localhost:8000/api/segments/1
+Content-Type: application/json
+
+### Get user active segments
+GET http://localhost:8000//api/users/1/segments
+Content-Type: application/json
+
+### Get report by filename
+GET http://localhost:8000/reports/test.csv
+Content-Type: application/json
+
+### Create user
+POST http://localhost:8000/api/users
+Content-Type: application/json
+
+{
+  "name": "Name 1"
+}
+
+### Create segment
+POST http://localhost:8000/api/segments
+Content-Type: application/json
+
+{
+  "slug": "Name 1321"
+}
+
+### Add/Delete segments to user
+POST http://localhost:8000/api/users/1/segments
+Content-Type: application/json
+
+{
+  "addSegments": [
+    "test 5"
+  ],
+  "deleteSegments": [
+    "test 6"
+  ]
+}
+
+### Generate report of segment history
+POST http://localhost:8000/api/segment-history/generate
+Content-Type: application/json
+
+{
+  "dateFrom": "2022-02-02",
+  "dateTo": "2024-05-07"
+}
+
+### Delete segment by name
+DELETE http://localhost:8000/api/segments/segment_name_1
+Content-Type: application/json

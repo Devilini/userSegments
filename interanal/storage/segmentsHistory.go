@@ -8,7 +8,7 @@ import (
 )
 
 type SegmentHistory interface {
-	GetSegmentsHistory(ctx context.Context, date string) ([]model.SegmentHistoryReport, error)
+	GetSegmentsHistory(ctx context.Context, dateFrom string, dateTo string) ([]model.SegmentHistoryReport, error)
 }
 
 type SegmentHistoryStorage struct {
@@ -19,14 +19,14 @@ func NewSegmentHistoryStorage(client *pgxpool.Pool) SegmentHistoryStorage {
 	return SegmentHistoryStorage{client: client}
 }
 
-func (s *SegmentHistoryStorage) GetSegmentsHistory(ctx context.Context, date string) ([]model.SegmentHistoryReport, error) {
+func (s *SegmentHistoryStorage) GetSegmentsHistory(ctx context.Context, dateFrom string, dateTo string) ([]model.SegmentHistoryReport, error) {
 	query := fmt.Sprintf("SELECT segments_history.id, user_id, segments.slug as segment, operation, created_at "+
-		"FROM %s inner join %s on segments.id = segments_history.segment_id WHERE created_at >= $1",
+		"FROM %s inner join %s on segments.id = segments_history.segment_id WHERE created_at BETWEEN $1 AND $2",
 		segmentsHistoryTable,
 		segmentsTable,
 	)
 	var segments []model.SegmentHistoryReport
-	rows, err := s.client.Query(ctx, query, date)
+	rows, err := s.client.Query(ctx, query, dateFrom, dateTo)
 	if err != nil {
 		return segments, fmt.Errorf("unable to query: %w", err)
 	}
