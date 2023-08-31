@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"log"
 	"userSegments/interanal/model"
 )
 
@@ -21,11 +20,15 @@ func NewSegmentHistoryStorage(client *pgxpool.Pool) SegmentHistoryStorage {
 }
 
 func (s *SegmentHistoryStorage) GetSegmentsHistory(ctx context.Context, date string) ([]model.SegmentHistoryReport, error) {
-	query := `SELECT segments_history.id, user_id, segments.slug as segment, operation, created_at FROM segments_history inner join segments on segments.id = segment_history.segment_id WHERE created_at >= $1`
+	query := fmt.Sprintf("SELECT segments_history.id, user_id, segments.slug as segment, operation, created_at "+
+		"FROM %s inner join %s on segments.id = segments_history.segment_id WHERE created_at >= $1",
+		segmentsHistoryTable,
+		segmentsTable,
+	)
 	var segments []model.SegmentHistoryReport
 	rows, err := s.client.Query(ctx, query, date)
 	if err != nil {
-		return segments, fmt.Errorf("unable to query user: %w", err)
+		return segments, fmt.Errorf("unable to query: %w", err)
 	}
 
 	for rows.Next() {
@@ -36,7 +39,6 @@ func (s *SegmentHistoryStorage) GetSegmentsHistory(ctx context.Context, date str
 		}
 		segments = append(segments, segment)
 	}
-	log.Println(segments)
 
 	return segments, nil
 }

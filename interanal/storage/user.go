@@ -21,7 +21,7 @@ func NewUserStorage(client *pgxpool.Pool) UserStorage {
 }
 
 func (s *UserStorage) GetUserById(ctx context.Context, id int) (model.User, error) {
-	query := `SELECT id, name FROM users WHERE id=$1`
+	query := fmt.Sprintf("SELECT id, name FROM %s WHERE id=$1", usersTable)
 	var user model.User
 	err := s.client.QueryRow(ctx, query, id).Scan(&user.Id, &user.Name)
 	if err != nil {
@@ -33,7 +33,7 @@ func (s *UserStorage) GetUserById(ctx context.Context, id int) (model.User, erro
 
 func (s *UserStorage) CreateUser(ctx context.Context, name string) (int, error) {
 	var id int
-	query := "INSERT INTO users (name) values ($1) RETURNING id" // todo table name
+	query := fmt.Sprintf("INSERT INTO %s (name) values ($1) RETURNING id", usersTable)
 	row := s.client.QueryRow(ctx, query, name)
 	if err := row.Scan(&id); err != nil {
 		return 0, err

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"log"
 	"time"
 	"userSegments/interanal/controller/request"
 	"userSegments/interanal/model"
@@ -12,7 +11,7 @@ import (
 
 type UserSegments interface {
 	GetUserSegments(ctx context.Context, id int) ([]model.Segment, error)
-	AddUserToSegment(ctx context.Context, req request.UserAddSegmentRequest) (int, error)
+	ChangeUserSegments(ctx context.Context, req request.UserAddSegmentRequest) (int, error)
 }
 
 type UserSegmentsService struct {
@@ -28,9 +27,8 @@ func (s *UserSegmentsService) GetUserSegments(ctx context.Context, id int) ([]mo
 	return s.userSegmentsStorage.GetUserSegments(ctx, id)
 }
 
-func (s *UserSegmentsService) AddUserToSegment(ctx context.Context, req request.UserAddSegmentRequest) (int, error) {
+func (s *UserSegmentsService) ChangeUserSegments(ctx context.Context, req request.UserAddSegmentRequest) (int, error) {
 	userActiveSegments, err := s.userSegmentsStorage.GetUserSegments(ctx, req.UserId)
-	log.Print("userActiveSegments", userActiveSegments)
 	if err != nil {
 		return 0, err
 	}
@@ -42,10 +40,9 @@ func (s *UserSegmentsService) AddUserToSegment(ctx context.Context, req request.
 	var userSegmentsToInsert []model.UserSegments
 	if len(req.AddSegments) > 0 {
 		toAdd := helper.DifferenceSlices(req.AddSegments, segmentSlugs)
-		log.Print("toAd", toAdd)
 		if len(toAdd) > 0 {
 			for _, slug := range toAdd {
-				segment, err := s.segmentsStorage.GetSegmentBySlug(ctx, slug) //todo запрос в цикле
+				segment, err := s.segmentsStorage.GetSegmentBySlug(ctx, slug)
 				if segment.Id == 0 {
 					continue
 				}
@@ -64,7 +61,6 @@ func (s *UserSegmentsService) AddUserToSegment(ctx context.Context, req request.
 	var segmentIds []int
 	if len(segmentSlugs) > 0 && len(req.DeleteSegments) > 0 {
 		segmentsToDel := helper.IntersectionSlices(req.DeleteSegments, segmentSlugs)
-		log.Print("toDel", segmentsToDel)
 		existingsSegmentsForDel, err := s.userSegmentsStorage.GetSegmentsBySlugs(ctx, segmentsToDel, req.UserId)
 		if err != nil {
 			return 0, err
@@ -73,8 +69,7 @@ func (s *UserSegmentsService) AddUserToSegment(ctx context.Context, req request.
 		for _, segment := range existingsSegmentsForDel {
 			segmentIds = append(segmentIds, segment.Id)
 		}
-		log.Print("toDel", segmentIds)
 	}
 
-	return s.userSegmentsStorage.AddUserToSegment(ctx, userSegmentsToInsert, segmentIds, req.UserId)
+	return s.userSegmentsStorage.ChangeUserSegments(ctx, userSegmentsToInsert, segmentIds, req.UserId)
 }

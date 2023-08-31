@@ -2,15 +2,13 @@ package config
 
 import (
 	"github.com/ilyakaznacheev/cleanenv"
-	"log"
+	"github.com/sirupsen/logrus"
 	"sync"
 )
 
-type Config struct { //todo
-	IsDebug       bool `env:"IS_DEBUG" env-default:"false"`
-	IsDevelopment bool `env:"IS_DEV" env-default:"false"`
-	Listen        struct {
-		Type string `env:"LISTEN_TYPE" env-default:"port"`
+type Config struct {
+	IsDebug bool `env:"IS_DEBUG" env-default:"false"`
+	Listen  struct {
 		Ip   string `env:"IP" env-default:"0.0.0.0"`
 		Port string `env:"PORT" env-default:"8000"`
 	}
@@ -26,22 +24,22 @@ type Config struct { //todo
 	}
 }
 
+var err error
 var instance *Config
 var once sync.Once
 
-func GetConfig() *Config {
+func GetConfig() (*Config, error) {
 	once.Do(func() {
-		log.Print("config init")
+		logrus.Info("config init")
 
 		instance = &Config{}
-
-		if err := cleanenv.ReadConfig(".env", instance); err != nil {
-			text := "The Art of Development - Production Service"
+		err = cleanenv.ReadConfig(".env", instance)
+		if err != nil {
+			text := "Segment Service"
 			description, _ := cleanenv.GetDescription(instance, &text)
-			log.Print(description)
-			log.Fatal(err)
+			logrus.Info(description)
 		}
 	})
 
-	return instance
+	return instance, err
 }

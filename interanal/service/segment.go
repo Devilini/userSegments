@@ -24,9 +24,10 @@ func NewSegmentService(storage storage.Segment, userSegmentsStorage storage.User
 
 func (s *SegmentService) GetSegmentById(ctx context.Context, id int) (model.Segment, error) {
 	segment, err := s.segmentStorage.GetSegmentById(ctx, id)
-	if segment.Id == 0 {
-		return segment, fmt.Errorf("segment does not exists") // todo error
+	if err != nil {
+		return segment, err
 	}
+
 	return segment, err
 }
 
@@ -35,24 +36,18 @@ func (s *SegmentService) DeleteSegmentBySlug(ctx context.Context, slug string) e
 	if segment.Id == 0 {
 		return fmt.Errorf("segment does not exists")
 	}
-
 	_, err := s.segmentStorage.DeleteSegmentBySlug(ctx, slug)
 	if err != nil {
 		return err
 	}
 
-	err = s.userSegmentsStorage.DeleteSlugForUsers(ctx, segment.Id)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.userSegmentsStorage.DeleteSlugForUsers(ctx, segment.Id)
 }
 
 func (s *SegmentService) CreateSegment(ctx context.Context, slug string) (int, error) {
 	segment, _ := s.segmentStorage.GetSegmentBySlug(ctx, slug)
 	if segment.Id != 0 {
-		return 0, fmt.Errorf("segment already exists") // todo error
+		return 0, fmt.Errorf("segment already exists")
 	}
 
 	return s.segmentStorage.CreateSegment(ctx, slug)

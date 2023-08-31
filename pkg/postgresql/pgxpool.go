@@ -2,7 +2,7 @@ package psql
 
 import (
 	"context"
-	"log"
+	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
 
@@ -35,27 +35,28 @@ func NewClient(
 ) (pool *pgxpool.Pool, err error) {
 	pgxCfg, parseConfigErr := pgxpool.ParseConfig(cfg.ConnStringFromCfg())
 	if parseConfigErr != nil {
-		log.Printf("Unable to parse config: %v\n", parseConfigErr)
+		logrus.Info("Unable to parse config: %v\n", parseConfigErr)
 		return nil, parseConfigErr
 	}
 
 	pool, parseConfigErr = pgxpool.NewWithConfig(ctx, pgxCfg)
 	if parseConfigErr != nil {
-		log.Printf("Failed to parse PostgreSQL configuration due to error: %v\n", parseConfigErr)
+		logrus.Info("Failed to parse PostgreSQL configuration due to error: %v\n", parseConfigErr)
 		return nil, parseConfigErr
 	}
 
 	err = DoWithAttempts(func() error {
 		pingErr := pool.Ping(ctx)
 		if pingErr != nil {
-			log.Printf("Failed to connect to postgres due to error %v... Going to do the next attempt\n", pingErr)
+			logrus.Info("Failed to connect to postgres due to error %v... Going to do the next attempt\n", pingErr)
 			return pingErr
 		}
 
 		return nil
 	}, maxAttempts, maxDelay)
 	if err != nil {
-		log.Fatal("All attempts are exceeded. Unable to connect to PostgreSQL")
+		logrus.Info("All attempts are exceeded. Unable to connect to PostgreSQL")
+		return pool, err
 	}
 
 	return pool, nil

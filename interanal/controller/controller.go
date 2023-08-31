@@ -2,23 +2,16 @@ package controller
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
-
-	"github.com/julienschmidt/httprouter"
 )
 
-type Handler struct {
-}
-
-func (h *Handler) InitRoutes(router *httprouter.Router) {
-	//router.HandlerFunc(http.MethodGet, "/api/user", GetUser())
-}
-
 func responseJson(w http.ResponseWriter, data any) {
-	jsonResp, err := json.Marshal(data)
+	resp := make(map[string]any)
+	resp["data"] = data
+	jsonResp, err := json.Marshal(resp)
 	if err != nil {
-		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -31,7 +24,8 @@ func errorResponseJson(w http.ResponseWriter, text string) {
 	resp["error"] = text
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
-		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)

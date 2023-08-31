@@ -29,13 +29,13 @@ func (h *userSegmentsController) GetUserSegments(w http.ResponseWriter, r *http.
 		errorResponseJson(w, "Invalid format of user id")
 		return
 	}
-
 	segments, err := h.userSegmentsService.GetUserSegments(r.Context(), id)
-
 	if err != nil {
-		logrus.Print(err)
+		logrus.Info(err)
+		errorResponseJson(w, err.Error())
 		return
 	}
+
 	type response struct {
 		Segments []model.Segment `json:"segments"`
 		UserId   int             `json:"user_id"`
@@ -46,7 +46,7 @@ func (h *userSegmentsController) GetUserSegments(w http.ResponseWriter, r *http.
 	})
 }
 
-func (h *userSegmentsController) AddUserToSegment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (h *userSegmentsController) ChangeUserSegments(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
 		errorResponseJson(w, "Invalid format of user id")
@@ -56,11 +56,11 @@ func (h *userSegmentsController) AddUserToSegment(w http.ResponseWriter, r *http
 	decoder := json.NewDecoder(r.Body)
 	var req request.UserAddSegmentRequest
 	if err := decoder.Decode(&req); err != nil {
-		logrus.Print(err)
+		logrus.Info(err)
+		errorResponseJson(w, "Error parse params")
 		return
 	}
 	req.UserId = id
-	logrus.Print(req)
 
 	validate := validator.New()
 	err = validate.Struct(req)
@@ -79,9 +79,10 @@ func (h *userSegmentsController) AddUserToSegment(w http.ResponseWriter, r *http
 		return
 	}
 
-	result, err := h.userSegmentsService.AddUserToSegment(r.Context(), req)
+	result, err := h.userSegmentsService.ChangeUserSegments(r.Context(), req)
 	if err != nil {
-		logrus.Print(err)
+		logrus.Info(err)
+		errorResponseJson(w, "Error change segments")
 		return
 	}
 

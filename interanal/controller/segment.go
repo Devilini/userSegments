@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
+	"userSegments/interanal/controller/request"
 	"userSegments/interanal/service"
 
 	"github.com/go-playground/validator/v10"
@@ -28,45 +30,32 @@ func (h *segmentController) GetSegment(w http.ResponseWriter, r *http.Request, p
 	}
 
 	segment, err := h.segmentService.GetSegmentById(r.Context(), id)
-	if segment.Id == 0 {
-		errorResponseJson(w, err.Error())
-		return
-	}
-
 	if err != nil {
-		logrus.Print(err)
+		logrus.Info(err)
+		errorResponseJson(w, "Segment does not exists")
 		return
 	}
 
 	responseJson(w, segment)
 }
 
-type segmentCreateRequest struct {
-	Slug string `json:"slug" validate:"required"`
-}
-
 func (h *segmentController) CreateSegment(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	err := r.ParseForm()
-	if err != nil {
-		logrus.Print(err)
+	decoder := json.NewDecoder(r.Body)
+	var req request.SegmentCreateRequest
+	if err := decoder.Decode(&req); err != nil {
+		logrus.Error(err)
+		errorResponseJson(w, "Error parse params")
 		return
 	}
 
-	slug := r.PostFormValue("slug")
-	logrus.Print(slug)
-	var request = segmentCreateRequest{
-		Slug: slug,
-	}
-
 	validate := validator.New()
-	err = validate.Struct(request)
+	err := validate.Struct(req)
 	if err != nil {
 		errorResponseJson(w, err.Error())
 		return
 	}
 
-	id, err := h.segmentService.CreateSegment(r.Context(), request.Slug)
-
+	id, err := h.segmentService.CreateSegment(r.Context(), req.Slug)
 	if id == 0 {
 		errorResponseJson(w, err.Error())
 		return
@@ -74,24 +63,24 @@ func (h *segmentController) CreateSegment(w http.ResponseWriter, r *http.Request
 
 	if err != nil {
 		logrus.Print(err)
+		errorResponseJson(w, "Cannot create segment")
 		return
 	}
 
-	type response struct { //todo В общий
+	type response struct {
 		Id int `json:"id"`
 	}
 
 	responseJson(w, response{
 		Id: id,
 	})
-
 }
 
 func (h *segmentController) DeleteSegment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	slug := ps.ByName("slug")
 	err := h.segmentService.DeleteSegmentBySlug(r.Context(), slug)
 	if err != nil {
-		logrus.Print(err)
+		logrus.Info(err)
 		errorResponseJson(w, err.Error())
 		return
 	}

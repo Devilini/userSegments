@@ -28,14 +28,6 @@ type App struct {
 
 var e *logrus.Entry
 
-//type Logger struct {
-//	*logrus.Entry
-//}
-
-//func GetLogger() *Logger {
-//	return &Logger{e}
-//}
-
 func NewApp(cfg *config.Config) (App, error) {
 	router := httprouter.New()
 	logger := e
@@ -48,13 +40,11 @@ func NewApp(cfg *config.Config) (App, error) {
 		cfg.PostgreSQL.Database,
 	)
 
-	// TODO to config
-	pgClient, err := psql.NewClient(context.Background(), 5, 3*time.Second, pgConfig)
+	pgClient, err := psql.NewClient(context.Background(), 3, 3*time.Second, pgConfig)
 	if err != nil {
-		return App{}, errors.New("psql.NewClient")
+		return App{}, errors.New("psql client error")
 	}
 
-	// TODO вынести роуты
 	userStorage := storage.NewUserStorage(pgClient)
 	segmentStorage := storage.NewSegmentStorage(pgClient)
 	userSegmentsStorage := storage.NewUserSegmentsStorage(pgClient)
@@ -73,14 +63,14 @@ func NewApp(cfg *config.Config) (App, error) {
 	router.GET("/api/users/:id", userController.GetUser)
 	router.POST("/api/users", userController.CreateUser)
 
-	router.GET("/api/segments/:id", segmentController.GetSegment) //todo :slug ????
+	router.GET("/api/segments/:id", segmentController.GetSegment)
 	router.POST("/api/segments", segmentController.CreateSegment)
 	router.DELETE("/api/segments/:slug", segmentController.DeleteSegment)
 
 	router.GET("/api/users/:id/segments", usersSegmentController.GetUserSegments)
-	router.POST("/api/users/:id/segments", usersSegmentController.AddUserToSegment)
+	router.POST("/api/users/:id/segments", usersSegmentController.ChangeUserSegments)
 
-	router.POST("/api/segment-history", segmentHistoryController.GenerateHistoryReport)
+	router.POST("/api/segment-history/generate", segmentHistoryController.GenerateHistoryReport)
 	router.GET("/reports/:filename", segmentHistoryController.DownloadReport)
 
 	return App{
@@ -105,8 +95,6 @@ func (a *App) startHTTP() {
 		a.logger.Fatal("failed to create listener")
 	}
 
-	//handler := c.Handler(a.router)
-
 	a.httpServer = &http.Server{
 		Handler:      a.router,
 		WriteTimeout: 15 * time.Second,
@@ -120,10 +108,5 @@ func (a *App) startHTTP() {
 		default:
 			logrus.Fatal("failed to start server")
 		}
-	}
-
-	err = a.httpServer.Shutdown(context.Background())
-	if err != nil {
-		a.logger.Fatal("failed to shutdown server")
 	}
 }

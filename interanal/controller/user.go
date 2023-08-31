@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
+	"userSegments/interanal/controller/request"
 	"userSegments/interanal/service"
 
 	"github.com/go-playground/validator/v10"
@@ -28,46 +30,35 @@ func (h *userController) GetUser(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	user, err := h.userService.GetUserById(r.Context(), id)
-	if user.Id == 0 {
-		errorResponseJson(w, err.Error())
-		return
-	}
-
 	if err != nil {
-		logrus.Print(err)
+		logrus.Info(err.Error())
+		errorResponseJson(w, "User does not exists")
 		return
 	}
 
 	responseJson(w, user)
 }
 
-type userCreateRequest struct {
-	Name string `json:"name" validate:"required"`
-}
-
 func (h *userController) CreateUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	err := r.ParseForm()
-	if err != nil {
-		logrus.Print(err)
+	decoder := json.NewDecoder(r.Body)
+	var req request.UserCreateRequest
+	if err := decoder.Decode(&req); err != nil {
+		logrus.Error(err)
+		errorResponseJson(w, "Error parse params")
 		return
 	}
 
-	userName := r.PostFormValue("name")
-
-	var request = userCreateRequest{
-		Name: userName,
-	}
-
 	validate := validator.New()
-	err = validate.Struct(request)
+	err := validate.Struct(req)
 	if err != nil {
 		errorResponseJson(w, err.Error())
 		return
 	}
 
-	id, err := h.userService.CreateUser(r.Context(), request.Name)
+	id, err := h.userService.CreateUser(r.Context(), req.Name)
 	if err != nil {
-		logrus.Print(err)
+		logrus.Error(err.Error())
+		errorResponseJson(w, "Cannot create user")
 		return
 	}
 

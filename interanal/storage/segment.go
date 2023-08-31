@@ -23,8 +23,7 @@ func NewSegmentStorage(client *pgxpool.Pool) SegmentStorage {
 }
 
 func (s *SegmentStorage) GetSegmentById(ctx context.Context, id int) (model.Segment, error) {
-	query := `SELECT id, slug FROM segments WHERE id=$1`
-
+	query := fmt.Sprintf("SELECT id, slug FROM %s WHERE id=$1", segmentsTable)
 	var segment model.Segment
 	err := s.client.QueryRow(ctx, query, id).Scan(&segment.Id, &segment.Slug)
 	if err != nil {
@@ -35,8 +34,7 @@ func (s *SegmentStorage) GetSegmentById(ctx context.Context, id int) (model.Segm
 }
 
 func (s *SegmentStorage) GetSegmentBySlug(ctx context.Context, slug string) (model.Segment, error) {
-	query := `SELECT id, slug FROM segments WHERE slug=$1`
-
+	query := fmt.Sprintf("SELECT id, slug FROM %s WHERE slug=$1", segmentsTable)
 	var segment model.Segment
 	err := s.client.QueryRow(ctx, query, slug).Scan(&segment.Id, &segment.Slug)
 	if err != nil {
@@ -48,7 +46,7 @@ func (s *SegmentStorage) GetSegmentBySlug(ctx context.Context, slug string) (mod
 
 func (s *SegmentStorage) CreateSegment(ctx context.Context, slug string) (int, error) {
 	var id int
-	query := "INSERT INTO segments (slug) values ($1) RETURNING id" // todo table name
+	query := fmt.Sprintf("INSERT INTO %s (slug) values ($1) RETURNING id", segmentsTable)
 	row := s.client.QueryRow(ctx, query, slug)
 	if err := row.Scan(&id); err != nil {
 		return 0, err
@@ -59,7 +57,7 @@ func (s *SegmentStorage) CreateSegment(ctx context.Context, slug string) (int, e
 
 func (s *SegmentStorage) DeleteSegmentBySlug(ctx context.Context, slug string) (int, error) {
 	var id int
-	query := "DELETE from segments WHERE slug=$1 RETURNING id"
+	query := fmt.Sprintf("DELETE from %s WHERE slug=$1 RETURNING id", segmentsTable)
 	row := s.client.QueryRow(ctx, query, slug)
 	if err := row.Scan(&id); err != nil {
 		return 0, err

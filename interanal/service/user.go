@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"userSegments/interanal/model"
 	"userSegments/interanal/storage"
 )
@@ -22,8 +21,8 @@ func NewUserService(storage storage.User) *UserService {
 
 func (s *UserService) GetUserById(ctx context.Context, id int) (model.User, error) {
 	user, err := s.userStorage.GetUserById(ctx, id)
-	if user.Id == 0 {
-		return user, fmt.Errorf("user does not exists") // todo error
+	if err != nil {
+		return user, err
 	}
 
 	return user, err

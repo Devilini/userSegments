@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"log"
+	"github.com/sirupsen/logrus"
 	"userSegments/interanal/model"
 )
 
 type UserSegments interface {
 	GetUserSegments(ctx context.Context, id int) ([]model.Segment, error)
 	GetSegmentsBySlugs(ctx context.Context, slugs []string, userId int) ([]model.Segment, error)
-	AddUserToSegment(ctx context.Context, userSegments []model.UserSegments, segmentsToDel []int, userId int) (int, error)
+	ChangeUserSegments(ctx context.Context, userSegments []model.UserSegments, segmentsToDel []int, userId int) (int, error)
 	DeleteSlugForUsers(ctx context.Context, segmentId int) error
 }
 
@@ -24,66 +24,65 @@ func NewUserSegmentsStorage(client *pgxpool.Pool) UserSegmentsStorage {
 	return UserSegmentsStorage{client: client}
 }
 
-func (s *UserSegmentsStorage) AddUserToSegment(
+func (s *UserSegmentsStorage) ChangeUserSegments(
 	ctx context.Context,
 	userSegments []model.UserSegments,
 	segmentsToDel []int,
 	userId int) (int, error) {
 	tx, err := s.client.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
 	if err != nil {
-		log.Fatalf("Unable to begin transaction because %s", err)
+		return 0, fmt.Errorf("unable to begin transaction because %w", err)
 	}
 	defer func(tx pgx.Tx, ctx context.Context) {
 		err := tx.Rollback(ctx)
 		if err != nil {
-			log.Println(err)
+			logrus.Error(err)
 		}
 	}(tx, ctx)
 
 	for _, user := range userSegments {
 		_, err = tx.Exec(
 			ctx,
-			`INSERT INTO user_segments(user_id, segment_id) VALUES($1, $2)`,
+			fmt.Sprintf("INSERT INTO %s(user_id, segment_id) VALUES($1, $2)", userSegmentsTable),
 			user.UserId, user.SegmentId,
 		)
 		if err != nil {
-			log.Fatalf("err %s", err)
+			return 0, err
 		}
 
 		_, err = tx.Exec(
 			ctx,
-			`INSERT INTO segments_history(user_id, segment_id, operation) VALUES($1, $2, $3)`,
-			user.UserId, user.SegmentId, "add",
+			fmt.Sprintf("INSERT INTO %s(user_id, segment_id, operation) VALUES($1, $2, 'add')", segmentsHistoryTable),
+			user.UserId, user.SegmentId,
 		)
 		if err != nil {
-			log.Fatalf("err %s", err)
+			return 0, err
 		}
 	}
 
 	_, err = tx.Exec(
 		ctx,
-		`DELETE FROM user_segments WHERE user_id = $1 AND segment_id = any($2)`,
+		fmt.Sprintf("DELETE FROM %s WHERE user_id = $1 AND segment_id = any($2)", userSegmentsTable),
 		userId,
 		segmentsToDel,
 	)
 	if err != nil {
-		log.Fatalf("Error deleting %s", err)
+		return 0, err
 	}
 
 	for _, seg := range segmentsToDel {
 		_, err = tx.Exec(
 			ctx,
-			`INSERT INTO segments_history(user_id, segment_id, operation) VALUES($1, $2, $3)`,
-			userId, seg, "delete",
+			fmt.Sprintf("INSERT INTO %s(user_id, segment_id, operation) VALUES($1, $2, 'delete')", segmentsHistoryTable),
+			userId, seg,
 		)
 		if err != nil {
-			log.Fatalf("err %s", err)
+			return 0, err
 		}
 	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
-		log.Println(err)
 		return 0, err
 	}
 
@@ -91,11 +90,11 @@ func (s *UserSegmentsStorage) AddUserToSegment(
 }
 
 func (s *UserSegmentsStorage) GetUserSegments(ctx context.Context, userId int) ([]model.Segment, error) {
-	query := `SELECT id, slug FROM segments inner join user_segments on user_segments.segment_id = segments.id WHERE user_id=$1`
+	query := fmt.Sprintf("SELECT id, slug FROM %s inner join %s on user_segments.segment_id = segments.id WHERE user_id=$1", segmentsTable, userSegmentsTable)
 	var segments []model.Segment
 	rows, err := s.client.Query(ctx, query, userId)
 	if err != nil {
-		return segments, fmt.Errorf("unable to query user: %w", err)
+		return segments, fmt.Errorf("unable to query: %w", err)
 	}
 
 	segments = []model.Segment{}
@@ -112,11 +111,11 @@ func (s *UserSegmentsStorage) GetUserSegments(ctx context.Context, userId int) (
 }
 
 func (s *UserSegmentsStorage) GetSegmentsBySlugs(ctx context.Context, slugs []string, userId int) ([]model.Segment, error) {
-	query := `SELECT id, slug FROM segments inner join user_segments on user_segments.segment_id = segments.id WHERE user_id = $1 AND segments.slug=any($2)`
+	query := fmt.Sprintf("SELECT id, slug FROM segments inner join %s on user_segments.segment_id = segments.id WHERE user_id = $1 AND segments.slug=any($2)", userSegmentsTable)
 	var segments []model.Segment
 	rows, err := s.client.Query(ctx, query, userId, slugs)
 	if err != nil {
-		return segments, fmt.Errorf("unable to query user: %w", err)
+		return segments, fmt.Errorf("unable to query: %w", err)
 	}
 
 	segments = []model.Segment{}
@@ -133,11 +132,8 @@ func (s *UserSegmentsStorage) GetSegmentsBySlugs(ctx context.Context, slugs []st
 }
 
 func (s *UserSegmentsStorage) DeleteSlugForUsers(ctx context.Context, segmentId int) error {
-	query := "DELETE from user_segments WHERE segment_id=$1 RETURNING segment_id"
+	query := fmt.Sprintf("DELETE from %s WHERE segment_id=$1 RETURNING segment_id", userSegmentsTable)
 	_, err := s.client.Exec(ctx, query, segmentId)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }

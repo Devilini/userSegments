@@ -7,12 +7,14 @@ import (
 )
 
 func main() {
-	cfg := config.GetConfig()
+	cfg, err := config.GetConfig()
+	if err != nil {
+		logrus.WithError(err).Fatal("config parse error")
+	}
 
-	//ctx = logging.ContextWithLogger(ctx, logging.NewLogger())
 	a, err := app.NewApp(cfg)
 	if err != nil {
-		logrus.WithError(err).Fatal("app.NewApp")
+		logrus.WithError(err).Fatal("app not started")
 	}
 
 	a.Run()
