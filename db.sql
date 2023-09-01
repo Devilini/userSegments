@@ -30,8 +30,6 @@ CREATE TABLE IF NOT EXISTS segments_history
     user_id int not null,
     segment_id int not null,
     operation segment_operation not null,
-    created_at timestamp WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
-    foreign key (user_id) references users (id),
-    foreign key (segment_id) references segments (id)
+    created_at timestamp WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
 
