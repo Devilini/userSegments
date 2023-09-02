@@ -86,7 +86,7 @@ func (c *pgConfig) ConnStringFromCfg() string {
 	url.WriteString(":")
 	url.WriteString(c.password)
 	url.WriteString("@")
-	url.WriteString(c.host)
+	url.WriteString(c.database)
 	url.WriteString(":")
 	url.WriteString(c.port)
 	url.WriteString("/")

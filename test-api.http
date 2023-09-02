@@ -19,7 +19,7 @@ POST http://localhost:8000/api/users
 Content-Type: application/json
 
 {
-  "name": "Name 1"
+  "name": "User 1"
 }
 
 ### Create segment
@@ -27,7 +27,7 @@ POST http://localhost:8000/api/segments
 Content-Type: application/json
 
 {
-  "slug": "Name 1321"
+  "slug": "VOICE_MESSAGES"
 }
 
 ### Add/Delete segments to user
@@ -36,10 +36,10 @@ Content-Type: application/json
 
 {
   "addSegments": [
-    "test 5"
+    "VOICE_MESSAGES"
   ],
   "deleteSegments": [
-    "test 6"
+    "DISCOUNT_30"
   ]
 }
 
@@ -53,5 +53,5 @@ Content-Type: application/json
 }
 
 ### Delete segment by name
-DELETE http://localhost:8000/api/segments/segment_name_1
+DELETE http://localhost:8000/api/segments/VOICE_MESSAGES
 Content-Type: application/json

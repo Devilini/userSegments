@@ -90,7 +90,7 @@ func (a *App) Run() {
 func (a *App) startHTTP() {
 	logrus.Info("HTTP Server initializing")
 
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", a.cfg.Listen.Ip, a.cfg.Listen.Port))
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", a.cfg.Listen.Port))
 	if err != nil {
 		a.logger.Fatal("failed to create listener")
 	}

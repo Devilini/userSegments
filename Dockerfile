@@ -1,6 +1,15 @@
-FROM golang:1.21 AS builder
+FROM golang:alpine as builder
 
-WORKDIR /usr/src/app
+WORKDIR /usr/local/src
+
+COPY go.mod go.sum /
+RUN go mod download
 
 COPY . .
-RUN go mod tidy
+COPY .env /
+RUN go build -o /bin/app cmd/main.go
+
+FROM alpine
+COPY --from=builder bin/app /
+COPY --from=builder .env /
+CMD ["/app"]

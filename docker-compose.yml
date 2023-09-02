@@ -1,36 +1,40 @@
-version: '3'
+version: "3.8"
 
 networks:
   internal:
 
+
 services:
-  server:
-    build: .
-    env_file:
-      - .env
-    container_name: go-container
-    depends_on:
-      - postgres
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/usr/src/app
-    command: go run cmd/main.go -b 0.0.0.0
-    networks:
-      internal:
 
   postgres:
+    container_name: postgres
     image: postgres
-    container_name: postgres-container
-    ports:
-      - "5432:5432"
-    restart: always
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    env_file:
+      - .env
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "${PSQL_PORT}:${PSQL_PORT}"
+    restart: unless-stopped
+    networks:
+      internal:
+
+  app:
+    container_name: app
+    build: .
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - .:/usr/src/app
+    env_file:
+      - .env
+    ports:
+      - "${PORT}:${PORT}"
+    depends_on:
+      - postgres
+    restart: unless-stopped
     networks:
       internal:
 
