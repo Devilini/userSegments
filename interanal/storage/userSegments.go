@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
 	"time"
+	"userSegments/interanal/apperror"
 	"userSegments/interanal/model"
 )
 
@@ -105,7 +106,10 @@ func (s *UserSegmentsStorage) GetUserSegments(ctx context.Context, userId int) (
 	var segments []model.Segment
 	rows, err := s.client.Query(ctx, query, userId, time.Now().Format(time.DateTime))
 	if err != nil {
-		return segments, fmt.Errorf("unable to query: %w", err)
+		if err == pgx.ErrNoRows {
+			return segments, apperror.NotFoundError("not found user segments")
+		}
+		return segments, err
 	}
 
 	segments = []model.Segment{}

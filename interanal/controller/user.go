@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"userSegments/interanal/apperror"
 	"userSegments/interanal/controller/request"
 	"userSegments/interanal/service"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/julienschmidt/httprouter"
-	"github.com/sirupsen/logrus"
 )
 
 type userController struct {
@@ -25,14 +25,13 @@ func NewUserController(userService service.User) *userController {
 func (h *userController) GetUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
-		errorResponseJson(w, "Invalid format of user id")
+		errorResponseJson(w, apperror.NewAppError(err, "Invalid format of user id"))
 		return
 	}
 
 	user, err := h.userService.GetUserById(r.Context(), id)
 	if err != nil {
-		logrus.Info(err.Error())
-		errorResponseJson(w, "User does not exists")
+		errorResponseJson(w, err)
 		return
 	}
 
@@ -43,22 +42,20 @@ func (h *userController) CreateUser(w http.ResponseWriter, r *http.Request, _ ht
 	decoder := json.NewDecoder(r.Body)
 	var req request.UserCreateRequest
 	if err := decoder.Decode(&req); err != nil {
-		logrus.Error(err)
-		errorResponseJson(w, "Error parse params")
+		errorResponseJson(w, apperror.NewAppError(err, "Error parse params"))
 		return
 	}
 
 	validate := validator.New()
 	err := validate.Struct(req)
 	if err != nil {
-		errorResponseJson(w, err.Error())
+		errorResponseJson(w, apperror.NewAppError(err, err.Error()))
 		return
 	}
 
 	id, err := h.userService.CreateUser(r.Context(), req.Name)
 	if err != nil {
-		logrus.Error(err.Error())
-		errorResponseJson(w, "Cannot create user")
+		errorResponseJson(w, err)
 		return
 	}
 

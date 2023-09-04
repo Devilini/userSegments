@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"github.com/go-playground/validator/v10"
 	"github.com/julienschmidt/httprouter"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
+	"userSegments/interanal/apperror"
 	"userSegments/interanal/controller/request"
 	"userSegments/interanal/model"
 	"userSegments/interanal/service"
@@ -26,13 +26,12 @@ func NewUserSegmentsController(userSegmentsService service.UserSegments) *userSe
 func (h *userSegmentsController) GetUserSegments(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
-		errorResponseJson(w, "Invalid format of user id")
+		errorResponseJson(w, apperror.NewAppError(err, "Invalid format of user id"))
 		return
 	}
 	segments, err := h.userSegmentsService.GetUserSegments(r.Context(), id)
 	if err != nil {
-		logrus.Info(err)
-		errorResponseJson(w, err.Error())
+		errorResponseJson(w, err)
 		return
 	}
 
@@ -49,15 +48,14 @@ func (h *userSegmentsController) GetUserSegments(w http.ResponseWriter, r *http.
 func (h *userSegmentsController) ChangeUserSegments(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
-		errorResponseJson(w, "Invalid format of user id")
+		errorResponseJson(w, apperror.NewAppError(err, "Invalid format of user id"))
 		return
 	}
 
 	decoder := json.NewDecoder(r.Body)
 	var req request.UserAddSegmentRequest
 	if err := decoder.Decode(&req); err != nil {
-		logrus.Info(err)
-		errorResponseJson(w, "Error parse params")
+		errorResponseJson(w, apperror.NewAppError(err, "Error parse params"))
 		return
 	}
 	req.UserId = id
@@ -65,24 +63,23 @@ func (h *userSegmentsController) ChangeUserSegments(w http.ResponseWriter, r *ht
 	validate := validator.New()
 	err = validate.Struct(req)
 	if err != nil {
-		errorResponseJson(w, err.Error())
+		errorResponseJson(w, apperror.NewAppError(err, err.Error()))
 		return
 	}
 
 	if len(req.AddSegments) == 0 && len(req.DeleteSegments) == 0 {
-		errorResponseJson(w, "All segment structs are empty")
+		errorResponseJson(w, apperror.NewAppError(err, "All segment structs are empty"))
 		return
 	}
 
 	if len(helper.IntersectionSlices(req.AddSegments, req.DeleteSegments)) > 0 {
-		errorResponseJson(w, "Segment structs has duplicates")
+		errorResponseJson(w, apperror.NewAppError(err, "Segment structs has duplicates"))
 		return
 	}
 
 	result, err := h.userSegmentsService.ChangeUserSegments(r.Context(), req)
 	if err != nil {
-		logrus.Info(err)
-		errorResponseJson(w, "Error change segments")
+		errorResponseJson(w, err)
 		return
 	}
 

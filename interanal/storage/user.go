@@ -3,7 +3,9 @@ package storage
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"userSegments/interanal/apperror"
 	"userSegments/interanal/model"
 )
 
@@ -25,10 +27,12 @@ func (s *UserStorage) GetUserById(ctx context.Context, id int) (model.User, erro
 	var user model.User
 	err := s.client.QueryRow(ctx, query, id).Scan(&user.Id, &user.Name)
 	if err != nil {
-		return user, fmt.Errorf("unable to query user: %w", err)
+		if err == pgx.ErrNoRows {
+			return user, apperror.NotFoundError("not found user")
+		}
 	}
 
-	return user, nil
+	return user, err
 }
 
 func (s *UserStorage) CreateUser(ctx context.Context, name string) (int, error) {

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
+	"userSegments/interanal/apperror"
 	"userSegments/interanal/service"
 )
 
@@ -26,7 +26,7 @@ func (h *segmentHistoryController) DownloadReport(w http.ResponseWriter, r *http
 
 	file, err := os.Open(path)
 	if err != nil && os.IsNotExist(err) {
-		errorResponseJson(w, "report not found")
+		errorResponseJson(w, apperror.NewAppError(err, "report not found"))
 		return
 	}
 	defer file.Close()
@@ -45,14 +45,12 @@ func (h *segmentHistoryController) GenerateHistoryReport(w http.ResponseWriter, 
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&req); err != nil {
-		logrus.Error(err)
-		errorResponseJson(w, "Error parse params")
+		errorResponseJson(w, apperror.NewAppError(err, "Error parse params"))
 		return
 	}
 	fileName, err := h.segmentHistoryService.GetSegmentsReport(r.Context(), req.DateFrom, req.DateTo)
 	if err != nil {
-		logrus.Error(err)
-		errorResponseJson(w, "Report generating error")
+		errorResponseJson(w, err)
 		return
 	}
 

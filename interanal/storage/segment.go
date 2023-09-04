@@ -3,7 +3,9 @@ package storage
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"userSegments/interanal/apperror"
 	"userSegments/interanal/model"
 )
 
@@ -28,10 +30,12 @@ func (s *SegmentStorage) GetSegmentById(ctx context.Context, id int) (model.Segm
 	var segment model.Segment
 	err := s.client.QueryRow(ctx, query, id).Scan(&segment.Id, &segment.Slug)
 	if err != nil {
-		return segment, fmt.Errorf("unable to query segment: %w", err)
+		if err == pgx.ErrNoRows {
+			return segment, apperror.NotFoundError("not found segment")
+		}
 	}
 
-	return segment, nil
+	return segment, err
 }
 
 func (s *SegmentStorage) GetSegmentBySlug(ctx context.Context, slug string) (model.Segment, error) {
@@ -39,10 +43,12 @@ func (s *SegmentStorage) GetSegmentBySlug(ctx context.Context, slug string) (mod
 	var segment model.Segment
 	err := s.client.QueryRow(ctx, query, slug).Scan(&segment.Id, &segment.Slug)
 	if err != nil {
-		return segment, fmt.Errorf("unable to query segment: %w", err)
+		if err == pgx.ErrNoRows {
+			return segment, apperror.NotFoundError("not found segment")
+		}
 	}
 
-	return segment, nil
+	return segment, err
 }
 
 func (s *SegmentStorage) GetSegmentsBySlug(ctx context.Context, slugs []string) ([]model.Segment, error) {
@@ -50,7 +56,9 @@ func (s *SegmentStorage) GetSegmentsBySlug(ctx context.Context, slugs []string) 
 	var segments []model.Segment
 	rows, err := s.client.Query(ctx, query, slugs)
 	if err != nil {
-		return segments, fmt.Errorf("unable to query segment: %w", err)
+		if err == pgx.ErrNoRows {
+			return segments, apperror.NotFoundError("not found segment")
+		}
 	}
 
 	for rows.Next() {
@@ -62,7 +70,7 @@ func (s *SegmentStorage) GetSegmentsBySlug(ctx context.Context, slugs []string) 
 		segments = append(segments, segment)
 	}
 
-	return segments, nil
+	return segments, err
 }
 
 func (s *SegmentStorage) CreateSegment(ctx context.Context, slug string, percent *int) (int, error) {

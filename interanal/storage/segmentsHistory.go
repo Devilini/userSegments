@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"userSegments/interanal/apperror"
 	"userSegments/interanal/model"
 )
 
@@ -35,7 +36,10 @@ func (s *SegmentHistoryStorage) GetSegmentsHistory(ctx context.Context, dateFrom
 	var segments []model.SegmentHistoryReport
 	rows, err := s.client.Query(ctx, query, dateFrom, dateTo)
 	if err != nil {
-		return segments, fmt.Errorf("unable to query: %w", err)
+		if err == pgx.ErrNoRows {
+			return segments, apperror.NotFoundError("not found Segment History data")
+		}
+		return segments, err
 	}
 
 	for rows.Next() {

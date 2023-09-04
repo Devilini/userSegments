@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"userSegments/interanal/apperror"
 	"userSegments/interanal/controller/request"
 	"userSegments/interanal/model"
 	"userSegments/interanal/storage"
@@ -34,11 +34,12 @@ func (s *SegmentService) GetSegmentById(ctx context.Context, id int) (model.Segm
 }
 
 func (s *SegmentService) DeleteSegmentBySlug(ctx context.Context, slug string) error {
-	segment, _ := s.segmentStorage.GetSegmentBySlug(ctx, slug)
-	if segment.Id == 0 {
-		return fmt.Errorf("segment does not exists")
+	segment, err := s.segmentStorage.GetSegmentBySlug(ctx, slug)
+	if err != nil {
+		return err
 	}
-	_, err := s.segmentStorage.DeleteSegmentBySlug(ctx, slug)
+
+	_, err = s.segmentStorage.DeleteSegmentBySlug(ctx, slug)
 	if err != nil {
 		return err
 	}
@@ -64,7 +65,7 @@ func (s *SegmentService) DeleteSegmentBySlug(ctx context.Context, slug string) e
 func (s *SegmentService) CreateSegment(ctx context.Context, req request.SegmentCreateRequest) (int, error) {
 	segment, _ := s.segmentStorage.GetSegmentBySlug(ctx, req.Slug)
 	if segment.Id != 0 {
-		return 0, fmt.Errorf("segment already exists")
+		return 0, apperror.NotFoundError("segment already exists")
 	}
 
 	segmentId, err := s.segmentStorage.CreateSegment(ctx, req.Slug, req.Percent)

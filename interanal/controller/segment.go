@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"userSegments/interanal/apperror"
 	"userSegments/interanal/controller/request"
 	"userSegments/interanal/service"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/julienschmidt/httprouter"
-	"github.com/sirupsen/logrus"
 )
 
 type segmentController struct {
@@ -25,14 +25,13 @@ func NewSegmentController(segmentService service.Segment) *segmentController {
 func (h *segmentController) GetSegment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
-		errorResponseJson(w, "Invalid format of segment id")
+		errorResponseJson(w, apperror.NewAppError(err, "Invalid format of segment id"))
 		return
 	}
 
 	segment, err := h.segmentService.GetSegmentById(r.Context(), id)
 	if err != nil {
-		logrus.Info(err)
-		errorResponseJson(w, "Segment does not exists")
+		errorResponseJson(w, err)
 		return
 	}
 
@@ -43,27 +42,20 @@ func (h *segmentController) CreateSegment(w http.ResponseWriter, r *http.Request
 	decoder := json.NewDecoder(r.Body)
 	var req request.SegmentCreateRequest
 	if err := decoder.Decode(&req); err != nil {
-		logrus.Error(err)
-		errorResponseJson(w, "Error parse params")
+		errorResponseJson(w, apperror.NewAppError(err, "Error parse params"))
 		return
 	}
 
 	validate := validator.New()
 	err := validate.Struct(req)
 	if err != nil {
-		errorResponseJson(w, err.Error())
+		errorResponseJson(w, apperror.NewAppError(err, err.Error()))
 		return
 	}
 
 	id, err := h.segmentService.CreateSegment(r.Context(), req)
-	if id == 0 {
-		errorResponseJson(w, err.Error())
-		return
-	}
-
 	if err != nil {
-		logrus.Print(err)
-		errorResponseJson(w, "Cannot create segment")
+		errorResponseJson(w, err)
 		return
 	}
 
@@ -80,8 +72,7 @@ func (h *segmentController) DeleteSegment(w http.ResponseWriter, r *http.Request
 	slug := ps.ByName("slug")
 	err := h.segmentService.DeleteSegmentBySlug(r.Context(), slug)
 	if err != nil {
-		logrus.Info(err)
-		errorResponseJson(w, err.Error())
+		errorResponseJson(w, err)
 		return
 	}
 
