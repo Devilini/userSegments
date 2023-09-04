@@ -3,12 +3,19 @@ package storage
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"userSegments/interanal/model"
 )
 
+const (
+	OperationTypeAdd    string = "add"
+	OperationTypeDelete string = "delete"
+)
+
 type SegmentHistory interface {
 	GetSegmentsHistory(ctx context.Context, dateFrom string, dateTo string) ([]model.SegmentHistoryReport, error)
+	BulkInsert(ctx context.Context, segmentHistory []model.SegmentHistory) (int64, error)
 }
 
 type SegmentHistoryStorage struct {
@@ -20,8 +27,8 @@ func NewSegmentHistoryStorage(client *pgxpool.Pool) SegmentHistoryStorage {
 }
 
 func (s *SegmentHistoryStorage) GetSegmentsHistory(ctx context.Context, dateFrom string, dateTo string) ([]model.SegmentHistoryReport, error) {
-	query := fmt.Sprintf("SELECT segments_history.id, user_id, segments.slug as segment, operation, created_at "+
-		"FROM %s inner join %s on segments.id = segments_history.segment_id WHERE created_at BETWEEN $1 AND $2",
+	query := fmt.Sprintf("SELECT sh.id, sh.user_id, s.slug, sh.operation, sh.created_at "+
+		"FROM %s sh inner join %s s on s.id = sh.segment_id WHERE sh.created_at BETWEEN $1 AND $2 order by sh.user_id",
 		segmentsHistoryTable,
 		segmentsTable,
 	)
@@ -41,4 +48,24 @@ func (s *SegmentHistoryStorage) GetSegmentsHistory(ctx context.Context, dateFrom
 	}
 
 	return segments, nil
+}
+
+func (s *SegmentHistoryStorage) BulkInsert(ctx context.Context, segmentHistory []model.SegmentHistory) (int64, error) {
+	var entries [][]any
+	columns := []string{"user_id", "segment_id", "operation"}
+	tableName := segmentsHistoryTable
+	for _, item := range segmentHistory {
+		entries = append(entries, []any{item.UserId, item.SegmentId, item.Operation})
+	}
+	countRows, err := s.client.CopyFrom(
+		ctx,
+		pgx.Identifier{tableName},
+		columns,
+		pgx.CopyFromRows(entries),
+	)
+	if err != nil {
+		return 0, fmt.Errorf("error copying into %s table: %w", tableName, err)
+	}
+
+	return countRows, nil
 }

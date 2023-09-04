@@ -3,23 +3,25 @@ package service
 import (
 	"context"
 	"fmt"
+	"userSegments/interanal/controller/request"
 	"userSegments/interanal/model"
 	"userSegments/interanal/storage"
 )
 
 type Segment interface {
 	GetSegmentById(ctx context.Context, id int) (model.Segment, error)
-	CreateSegment(ctx context.Context, slug string) (int, error)
+	CreateSegment(ctx context.Context, req request.SegmentCreateRequest) (int, error)
 	DeleteSegmentBySlug(ctx context.Context, slug string) error
 }
 
 type SegmentService struct {
-	segmentStorage      storage.Segment
-	userSegmentsStorage storage.UserSegments
+	segmentStorage        storage.Segment
+	userSegmentsStorage   storage.UserSegments
+	segmentHistoryStorage storage.SegmentHistory
 }
 
-func NewSegmentService(storage storage.Segment, userSegmentsStorage storage.UserSegments) *SegmentService {
-	return &SegmentService{segmentStorage: storage, userSegmentsStorage: userSegmentsStorage}
+func NewSegmentService(storage storage.Segment, userSegmentsStorage storage.UserSegments, segmentHistoryStorage storage.SegmentHistory) *SegmentService {
+	return &SegmentService{segmentStorage: storage, userSegmentsStorage: userSegmentsStorage, segmentHistoryStorage: segmentHistoryStorage}
 }
 
 func (s *SegmentService) GetSegmentById(ctx context.Context, id int) (model.Segment, error) {
@@ -41,14 +43,41 @@ func (s *SegmentService) DeleteSegmentBySlug(ctx context.Context, slug string) e
 		return err
 	}
 
-	return s.userSegmentsStorage.DeleteSlugForUsers(ctx, segment.Id)
+	userIds, err := s.userSegmentsStorage.DeleteSlugForUsers(ctx, segment.Id)
+	if err != nil {
+		return err
+	}
+
+	var entries []model.SegmentHistory
+	for _, userId := range userIds {
+		entries = append(entries, model.SegmentHistory{UserId: userId, SegmentId: segment.Id, Operation: storage.OperationTypeDelete})
+	}
+
+	_, err = s.segmentHistoryStorage.BulkInsert(ctx, entries)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (s *SegmentService) CreateSegment(ctx context.Context, slug string) (int, error) {
-	segment, _ := s.segmentStorage.GetSegmentBySlug(ctx, slug)
+func (s *SegmentService) CreateSegment(ctx context.Context, req request.SegmentCreateRequest) (int, error) {
+	segment, _ := s.segmentStorage.GetSegmentBySlug(ctx, req.Slug)
 	if segment.Id != 0 {
 		return 0, fmt.Errorf("segment already exists")
 	}
 
-	return s.segmentStorage.CreateSegment(ctx, slug)
+	segmentId, err := s.segmentStorage.CreateSegment(ctx, req.Slug, req.Percent)
+	if err != nil {
+		return 0, err
+	}
+
+	if req.Percent != nil {
+		err := s.userSegmentsStorage.CreateByPercent(ctx, *req.Percent, segmentId)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return segmentId, nil
 }

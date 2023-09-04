@@ -43,7 +43,7 @@ func (s *SegmentHistoryService) GetSegmentsReport(ctx context.Context, dateFrom 
 		return "", err
 	}
 	for _, item := range history {
-		row := []string{item.UserId, item.Segment, item.Operation, item.CreatedAt.Format("2006-01-02 15:04:05")}
+		row := []string{item.UserId, item.Segment, item.Operation, item.CreatedAt.Format(time.DateTime)}
 		err := csvWriter.Write(row)
 		if err != nil {
 			return "", err

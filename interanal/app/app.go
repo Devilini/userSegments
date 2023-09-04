@@ -17,13 +17,14 @@ import (
 )
 
 type App struct {
-	cfg                 *config.Config
-	router              *httprouter.Router
-	httpServer          *http.Server
-	logger              *logrus.Entry
-	userService         service.User
-	segmentService      service.Segment
-	userSegmentsService service.UserSegments
+	cfg                   *config.Config
+	router                *httprouter.Router
+	httpServer            *http.Server
+	logger                *logrus.Entry
+	userService           service.User
+	segmentService        service.Segment
+	userSegmentsService   service.UserSegments
+	segmentHistoryService service.SegmentHistory
 }
 
 var e *logrus.Entry
@@ -51,8 +52,8 @@ func NewApp(cfg *config.Config) (App, error) {
 	segmentHistoryStorage := storage.NewSegmentHistoryStorage(pgClient)
 
 	userService := service.NewUserService(&userStorage)
-	segmentService := service.NewSegmentService(&segmentStorage, &userSegmentsStorage)
-	userSegmentsService := service.NewUserSegmentsService(&userSegmentsStorage, segmentStorage)
+	segmentService := service.NewSegmentService(&segmentStorage, &userSegmentsStorage, &segmentHistoryStorage)
+	userSegmentsService := service.NewUserSegmentsService(&userSegmentsStorage, segmentStorage, &segmentHistoryStorage)
 	segmentHistoryService := service.NewSegmentsHistoryService(&segmentHistoryStorage)
 
 	userController := controller.NewUserController(userService)
@@ -101,6 +102,8 @@ func (a *App) startHTTP() {
 		ReadTimeout:  15 * time.Second,
 	}
 
+	go deleteExpiredUserSegmentsWorker(a.userSegmentsService)
+
 	if err = a.httpServer.Serve(listener); err != nil {
 		switch {
 		case errors.Is(err, http.ErrServerClosed):
@@ -108,5 +111,21 @@ func (a *App) startHTTP() {
 		default:
 			logrus.Fatal("failed to start server")
 		}
+	}
+}
+
+func deleteExpiredUserSegmentsWorker(s service.UserSegments) {
+	logrus.Info("deleteExpiredUserSegmentsWorker was running")
+	for {
+		time.Sleep(20 * time.Second)
+
+		logrus.Info("deleteExpiredUserSegmentsWorker: start")
+
+		countRows, err := s.DeleteAllExpired(context.Background())
+		if err != nil {
+			logrus.Errorf(err.Error())
+		}
+
+		logrus.Info(fmt.Sprintf("deleteExpiredUserSegmentsWorker: end, rows deleted: %d", countRows))
 	}
 }

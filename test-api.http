@@ -1,17 +1,9 @@
-### Get users by id
+### Get user by id
 GET http://localhost:8000/api/users/1
 Accept: application/json
 
-### Get segment by id
-GET http://localhost:8000/api/segments/1
-Content-Type: application/json
-
 ### Get user active segments
 GET http://localhost:8000//api/users/1/segments
-Content-Type: application/json
-
-### Get report by filename
-GET http://localhost:8000/reports/test.csv
 Content-Type: application/json
 
 ### Create user
@@ -22,15 +14,7 @@ Content-Type: application/json
   "name": "User 1"
 }
 
-### Create segment
-POST http://localhost:8000/api/segments
-Content-Type: application/json
-
-{
-  "slug": "VOICE_MESSAGES"
-}
-
-### Add/Delete segments to user
+### Add/Delete segments to user with empty expired date
 POST http://localhost:8000/api/users/1/segments
 Content-Type: application/json
 
@@ -40,8 +24,54 @@ Content-Type: application/json
   ],
   "deleteSegments": [
     "DISCOUNT_30"
-  ]
+  ],
+  "expiredDate": null
 }
+
+### Add/Delete segments to user with expired date
+POST http://localhost:8000/api/users/1/segments
+Content-Type: application/json
+
+{
+  "addSegments": [
+    "VOICE_MESSAGES"
+  ],
+  "deleteSegments": [
+    "DISCOUNT_30"
+  ],
+  "expiredDate": "2023-02-01 23:37:21"
+}
+
+### Get segment by id
+GET http://localhost:8000/api/segments/1
+Content-Type: application/json
+
+
+### Create segment
+POST http://localhost:8000/api/segments
+Content-Type: application/json
+
+{
+  "slug": "VOICE_MESSAGES",
+  "percent": null
+}
+
+### Create segment with percent
+POST http://localhost:8000/api/segments
+Content-Type: application/json
+
+{
+  "slug": "VOICE_MESSAGES",
+  "percent": 50
+}
+
+### Delete segment by name
+DELETE http://localhost:8000/api/segments/VOICE_MESSAGES
+Content-Type: application/json
+
+### Get report by filename
+GET http://localhost:8000/reports/test.csv
+Content-Type: application/json
 
 ### Generate report of segment history
 POST http://localhost:8000/api/segment-history/generate
@@ -51,7 +81,3 @@ Content-Type: application/json
   "dateFrom": "2022-02-02",
   "dateTo": "2024-05-07"
 }
-
-### Delete segment by name
-DELETE http://localhost:8000/api/segments/VOICE_MESSAGES
-Content-Type: application/json

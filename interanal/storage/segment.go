@@ -10,7 +10,8 @@ import (
 type Segment interface {
 	GetSegmentById(ctx context.Context, id int) (model.Segment, error)
 	GetSegmentBySlug(ctx context.Context, slug string) (model.Segment, error)
-	CreateSegment(ctx context.Context, slug string) (int, error)
+	GetSegmentsBySlug(ctx context.Context, slugs []string) ([]model.Segment, error)
+	CreateSegment(ctx context.Context, slug string, percent *int) (int, error)
 	DeleteSegmentBySlug(ctx context.Context, slug string) (int, error)
 }
 
@@ -44,10 +45,30 @@ func (s *SegmentStorage) GetSegmentBySlug(ctx context.Context, slug string) (mod
 	return segment, nil
 }
 
-func (s *SegmentStorage) CreateSegment(ctx context.Context, slug string) (int, error) {
+func (s *SegmentStorage) GetSegmentsBySlug(ctx context.Context, slugs []string) ([]model.Segment, error) {
+	query := fmt.Sprintf("SELECT id, slug FROM %s WHERE slug=any($1)", segmentsTable)
+	var segments []model.Segment
+	rows, err := s.client.Query(ctx, query, slugs)
+	if err != nil {
+		return segments, fmt.Errorf("unable to query segment: %w", err)
+	}
+
+	for rows.Next() {
+		segment := model.Segment{}
+		err := rows.Scan(&segment.Id, &segment.Slug)
+		if err != nil {
+			return nil, fmt.Errorf("unable to scan row: %w", err)
+		}
+		segments = append(segments, segment)
+	}
+
+	return segments, nil
+}
+
+func (s *SegmentStorage) CreateSegment(ctx context.Context, slug string, percent *int) (int, error) {
 	var id int
-	query := fmt.Sprintf("INSERT INTO %s (slug) values ($1) RETURNING id", segmentsTable)
-	row := s.client.QueryRow(ctx, query, slug)
+	query := fmt.Sprintf("INSERT INTO %s (slug, percent) values ($1, $2) RETURNING id", segmentsTable)
+	row := s.client.QueryRow(ctx, query, slug, percent)
 	if err := row.Scan(&id); err != nil {
 		return 0, err
 	}

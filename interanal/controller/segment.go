@@ -55,7 +55,7 @@ func (h *segmentController) CreateSegment(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	id, err := h.segmentService.CreateSegment(r.Context(), req.Slug)
+	id, err := h.segmentService.CreateSegment(r.Context(), req)
 	if id == 0 {
 		errorResponseJson(w, err.Error())
 		return

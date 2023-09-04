@@ -1,9 +1,12 @@
 package request
 
+import _type "userSegments/interanal/model/type"
+
 type UserAddSegmentRequest struct {
-	UserId         int      `json:"userId" validate:"required"`
-	AddSegments    []string `json:"addSegments" validate:"required"`
-	DeleteSegments []string `json:"deleteSegments" validate:"required"`
+	UserId         int             `json:"userId" validate:"required"`
+	AddSegments    []string        `json:"addSegments" validate:"required"`
+	DeleteSegments []string        `json:"deleteSegments" validate:"required"`
+	ExpiredDate    *_type.DateTime `json:"expiredDate,omitempty"`
 }
 
 type UserCreateRequest struct {
@@ -11,5 +14,6 @@ type UserCreateRequest struct {
 }
 
 type SegmentCreateRequest struct {
-	Slug string `json:"slug" validate:"required"`
+	Slug    string `json:"slug" validate:"required"`
+	Percent *int   `json:"percent,omitempty" validate:"omitempty,min=1,max=100"`
 }
